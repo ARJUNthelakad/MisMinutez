@@ -1,0 +1,31 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: misminutez-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+
+  misminutez-ai:
+    build: .
+    container_name: misminutez-ai-api
+    depends_on:
+      - ollama
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL:-qwen2.5:7b}
+      - WHISPER_MODEL=${WHISPER_MODEL:-large-v3-turbo}
+      - WHISPER_DEVICE=${WHISPER_DEVICE:-auto}
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8}
+      - SELF_HOSTED_API_TOKEN=${SELF_HOSTED_API_TOKEN:-}
+    volumes:
+      - whisper_cache:/root/.cache/huggingface
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
+  whisper_cache:

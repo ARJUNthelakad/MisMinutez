@@ -1,0 +1,345 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Hardened Primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || arr[0] is string);
+    }
+
+    function isParentMeetingOwner(meetingId) {
+      return exists(/databases/$(database)/documents/meetings/$(meetingId)) &&
+        get(/databases/$(database)/documents/meetings/$(meetingId)).data.userId == request.auth.uid;
+    }
+
+    // --- Validation Blueprints (Anti-Update-Gap) ---
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid', 'name', 'email', 'defaultReportLanguage', 'preferredLanguages',
+          'theme', 'autoDeleteAudio', 'chunkDurationSec', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid', 'name', 'email', 'defaultReportLanguage', 'preferredLanguages',
+          'theme', 'autoDeleteAudio', 'chunkDurationSec', 'createdAt', 'updatedAt'
+        ]) &&
+        data.uid is string && data.uid == request.auth.uid && isValidId(data.uid) &&
+        data.name is string && data.name.size() <= 120 &&
+        data.email is string && data.email.size() <= 254 &&
+        data.defaultReportLanguage is string && data.defaultReportLanguage.size() >= 1 && data.defaultReportLanguage.size() <= 40 &&
+        isStringList(data.preferredLanguages, 10) &&
+        data.theme in ['light', 'dark'] &&
+        data.autoDeleteAudio is bool &&
+        data.chunkDurationSec is number && data.chunkDurationSec >= 10 && data.chunkDurationSec <= 60 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidMeeting(data) {
+      return data.keys().hasAll([
+          'userId', 'title', 'description', 'meetingType', 'preferredOutputLanguage',
+          'expectedLanguages', 'startedAt', 'endedAt', 'duration', 'status',
+          'executiveSummary', 'objectives', 'discussionPoints', 'unresolvedQuestions',
+          'risks', 'followUpSuggestions', 'meetingConclusion', 'speakers',
+          'languagesDetected', 'segmentCount', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'title', 'description', 'meetingType', 'attendees', 'venue',
+          'preferredOutputLanguage', 'expectedLanguages', 'startedAt', 'endedAt',
+          'duration', 'status', 'executiveSummary', 'objectives', 'discussionPoints',
+          'unresolvedQuestions', 'risks', 'followUpSuggestions', 'meetingConclusion',
+          'speakers', 'languagesDetected', 'segmentCount', 'createdAt', 'updatedAt'
+        ]) &&
+        data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.description is string && data.description.size() <= 1000 &&
+        data.meetingType is string && data.meetingType.size() >= 1 && data.meetingType.size() <= 60 &&
+        (!('attendees' in data) || isStringList(data.attendees, 50)) &&
+        (!('venue' in data) || (data.venue is string && data.venue.size() <= 160)) &&
+        data.preferredOutputLanguage is string && data.preferredOutputLanguage.size() >= 1 && data.preferredOutputLanguage.size() <= 40 &&
+        isStringList(data.expectedLanguages, 10) &&
+        data.startedAt is string && data.startedAt.size() <= 40 &&
+        data.endedAt is string && data.endedAt.size() <= 40 &&
+        data.duration is number && data.duration >= 0 && data.duration <= 86400 &&
+        data.status in [
+          'recording', 'recorded_locally', 'uploading', 'waiting_for_processing',
+          'processing', 'completed', 'error'
+        ] &&
+        data.executiveSummary is string && data.executiveSummary.size() <= 8000 &&
+        isStringList(data.objectives, 25) &&
+        isStringList(data.discussionPoints, 50) &&
+        isStringList(data.unresolvedQuestions, 40) &&
+        isStringList(data.risks, 40) &&
+        isStringList(data.followUpSuggestions, 40) &&
+        data.meetingConclusion is string && data.meetingConclusion.size() <= 4000 &&
+        data.speakers is map && data.speakers.size() <= 25 &&
+        isStringList(data.languagesDetected, 20) &&
+        data.segmentCount is number && data.segmentCount >= 0 && data.segmentCount <= 5000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTranscriptSegment(data, meetingId) {
+      return data.keys().hasAll([
+          'userId', 'meetingId', 'speakerLabel', 'originalText', 'englishTranslation',
+          'detectedLanguage', 'startTime', 'endTime', 'uncertain', 'chunkIndex',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'meetingId', 'speakerLabel', 'originalText', 'englishTranslation',
+          'detectedLanguage', 'startTime', 'endTime', 'uncertain', 'chunkIndex',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+        data.meetingId is string && data.meetingId == meetingId && isValidId(data.meetingId) &&
+        data.speakerLabel is string && data.speakerLabel.size() >= 1 && data.speakerLabel.size() <= 60 &&
+        data.originalText is string && data.originalText.size() >= 1 && data.originalText.size() <= 6000 &&
+        data.englishTranslation is string && data.englishTranslation.size() <= 6000 &&
+        data.detectedLanguage is string && data.detectedLanguage.size() >= 1 && data.detectedLanguage.size() <= 60 &&
+        data.startTime is number && data.startTime >= 0 && data.startTime <= 86400 &&
+        data.endTime is number && data.endTime >= 0 && data.endTime <= 86400 &&
+        data.uncertain is bool &&
+        data.chunkIndex is number && data.chunkIndex >= 0 && data.chunkIndex <= 10000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDecision(data, meetingId) {
+      return data.keys().hasAll([
+          'userId', 'meetingId', 'decisionText', 'decisionType', 'speaker',
+          'timestamp', 'transcriptReference', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'meetingId', 'decisionText', 'decisionType', 'speaker',
+          'timestamp', 'transcriptReference', 'createdAt', 'updatedAt'
+        ]) &&
+        data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+        data.meetingId is string && data.meetingId == meetingId && isValidId(data.meetingId) &&
+        data.decisionText is string && data.decisionText.size() >= 1 && data.decisionText.size() <= 2000 &&
+        data.decisionType in ['final', 'proposed', 'pending', 'rejected'] &&
+        data.speaker is string && data.speaker.size() <= 80 &&
+        data.timestamp is string && data.timestamp.size() <= 40 &&
+        data.transcriptReference is string && data.transcriptReference.size() <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidActionItem(data) {
+      return data.keys().hasAll([
+          'userId', 'meetingId', 'meetingTitle', 'task', 'assignedTo',
+          'deadline', 'priority', 'status', 'transcriptReference',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'meetingId', 'meetingTitle', 'task', 'assignedTo',
+          'deadline', 'priority', 'status', 'transcriptReference',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+        data.meetingId is string && isValidId(data.meetingId) &&
+        data.meetingTitle is string && data.meetingTitle.size() <= 200 &&
+        data.task is string && data.task.size() >= 1 && data.task.size() <= 1000 &&
+        data.assignedTo is string && data.assignedTo.size() <= 120 &&
+        data.deadline is string && data.deadline.size() <= 80 &&
+        data.priority in ['low', 'medium', 'high'] &&
+        data.status in ['pending', 'completed'] &&
+        data.transcriptReference is string && data.transcriptReference.size() <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidChatMessage(data, meetingId) {
+      return data.keys().hasAll(['userId', 'meetingId', 'question', 'answer', 'createdAt']) &&
+        data.keys().hasOnly(['userId', 'meetingId', 'question', 'answer', 'createdAt']) &&
+        data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+        data.meetingId is string && data.meetingId == meetingId && isValidId(data.meetingId) &&
+        data.question is string && data.question.size() >= 1 && data.question.size() <= 2000 &&
+        data.answer is string && data.answer.size() >= 1 && data.answer.size() <= 12000 &&
+        data.createdAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    // 1. User Profiles (Strict PII Isolation)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'email', 'defaultReportLanguage', 'preferredLanguages',
+          'theme', 'autoDeleteAudio', 'chunkDurationSec', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedUser() && isValidId(userId) && isOwner(userId);
+    }
+
+    // 2. Meetings
+    match /meetings/{meetingId} {
+      allow get: if isSignedIn() && isValidId(meetingId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(meetingId) &&
+        isValidMeeting(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(meetingId) &&
+        existing().userId == request.auth.uid &&
+        isValidMeeting(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action 1: Update live recording progress/status
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'endedAt', 'duration', 'status', 'speakers', 'languagesDetected', 'segmentCount', 'updatedAt'
+          ]) ||
+          // Action 2: Save AI-generated structured meeting minutes
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'status', 'endedAt', 'duration', 'executiveSummary', 'objectives',
+            'discussionPoints', 'unresolvedQuestions', 'risks', 'followUpSuggestions',
+            'meetingConclusion', 'speakers', 'languagesDetected', 'segmentCount', 'updatedAt'
+          ]) ||
+          // Action 3: Rename speakers or update metadata/attendees/venue
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'description', 'meetingType', 'attendees', 'venue', 'startedAt',
+            'preferredOutputLanguage', 'speakers', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(meetingId) && existing().userId == request.auth.uid;
+
+      // 2a. Transcript Segments Subcollection
+      match /segments/{segmentId} {
+        allow get: if isSignedIn() && isValidId(meetingId) && isValidId(segmentId) && isParentMeetingOwner(meetingId);
+        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow create: if isVerifiedUser() &&
+          isValidId(meetingId) &&
+          isValidId(segmentId) &&
+          isValidTranscriptSegment(incoming(), meetingId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          isParentMeetingOwner(meetingId);
+        allow update: if isVerifiedUser() &&
+          isValidId(meetingId) &&
+          isValidId(segmentId) &&
+          isValidTranscriptSegment(incoming(), meetingId) &&
+          existing().userId == request.auth.uid &&
+          incoming().userId == existing().userId &&
+          incoming().meetingId == existing().meetingId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'speakerLabel', 'originalText', 'englishTranslation', 'detectedLanguage', 'uncertain', 'updatedAt'
+          ]) &&
+          isParentMeetingOwner(meetingId);
+        allow delete: if isVerifiedUser() && isValidId(meetingId) && isValidId(segmentId) && isParentMeetingOwner(meetingId);
+      }
+
+      // 2b. Decisions Subcollection
+      match /decisions/{decisionId} {
+        allow get: if isSignedIn() && isValidId(meetingId) && isValidId(decisionId) && isParentMeetingOwner(meetingId);
+        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow create: if isVerifiedUser() &&
+          isValidId(meetingId) &&
+          isValidId(decisionId) &&
+          isValidDecision(incoming(), meetingId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          isParentMeetingOwner(meetingId);
+        allow update: if isVerifiedUser() &&
+          isValidId(meetingId) &&
+          isValidId(decisionId) &&
+          isValidDecision(incoming(), meetingId) &&
+          existing().userId == request.auth.uid &&
+          incoming().userId == existing().userId &&
+          incoming().meetingId == existing().meetingId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'decisionText', 'decisionType', 'speaker', 'timestamp', 'transcriptReference', 'updatedAt'
+          ]) &&
+          isParentMeetingOwner(meetingId);
+        allow delete: if isVerifiedUser() && isValidId(meetingId) && isValidId(decisionId) && isParentMeetingOwner(meetingId);
+      }
+
+      // 2c. Grounded AI Meeting Chat Subcollection
+      match /chatMessages/{messageId} {
+        allow get: if isSignedIn() && isValidId(meetingId) && isValidId(messageId) && isParentMeetingOwner(meetingId);
+        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow create: if isVerifiedUser() &&
+          isValidId(meetingId) &&
+          isValidId(messageId) &&
+          isValidChatMessage(incoming(), meetingId) &&
+          incoming().createdAt == request.time &&
+          isParentMeetingOwner(meetingId);
+        allow update: if false;
+        allow delete: if isVerifiedUser() && isValidId(meetingId) && isValidId(messageId) && isParentMeetingOwner(meetingId);
+      }
+    }
+
+    // 3. Action Items (User-Scoped across meetings for Dashboard & Meeting Trackers)
+    match /actionItems/{itemId} {
+      allow get: if isSignedIn() && isValidId(itemId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidActionItem(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isParentMeetingOwner(incoming().meetingId);
+      allow update: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        existing().userId == request.auth.uid &&
+        isValidActionItem(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().meetingId == existing().meetingId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action 1: Toggle completion status
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) ||
+          // Action 2: Edit task details, assignee, deadline, priority, status
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'task', 'assignedTo', 'deadline', 'priority', 'status', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(itemId) && existing().userId == request.auth.uid;
+    }
+  }
+}

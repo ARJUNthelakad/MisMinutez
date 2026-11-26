@@ -1,0 +1,208 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private user profile and recording/report preferences isolated by Firebase UID.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "defaultReportLanguage": { "type": "string", "maxLength": 40 },
+        "preferredLanguages": { "type": "array", "description": "Up to 10 preferred meeting languages" },
+        "theme": { "type": "string", "enum": ["light", "dark"] },
+        "autoDeleteAudio": { "type": "boolean" },
+        "chunkDurationSec": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "defaultReportLanguage", "preferredLanguages", "theme", "autoDeleteAudio", "chunkDurationSec", "createdAt", "updatedAt"]
+    },
+    "Meeting": {
+      "title": "Meeting",
+      "description": "Physical multilingual meeting record with structured AI-generated minutes.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "meetingType": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Preset or custom manually entered meeting type"
+        },
+        "attendees": {
+          "type": "array",
+          "description": "Up to 50 attendee names participating in the meeting"
+        },
+        "venue": {
+          "type": "string",
+          "maxLength": 160,
+          "description": "Physical meeting room or location venue"
+        },
+        "preferredOutputLanguage": { "type": "string", "maxLength": 40 },
+        "expectedLanguages": { "type": "array" },
+        "startedAt": { "type": "string", "maxLength": 40 },
+        "endedAt": { "type": "string", "maxLength": 40 },
+        "duration": { "type": "number" },
+        "status": {
+          "type": "string",
+          "enum": [
+            "recording",
+            "recorded_locally",
+            "uploading",
+            "waiting_for_processing",
+            "processing",
+            "completed",
+            "error"
+          ]
+        },
+        "executiveSummary": { "type": "string", "maxLength": 8000 },
+        "objectives": { "type": "array" },
+        "discussionPoints": { "type": "array" },
+        "unresolvedQuestions": { "type": "array" },
+        "risks": { "type": "array" },
+        "followUpSuggestions": { "type": "array" },
+        "meetingConclusion": { "type": "string", "maxLength": 4000 },
+        "speakers": { "type": "object" },
+        "languagesDetected": { "type": "array" },
+        "segmentCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "title",
+        "description",
+        "meetingType",
+        "preferredOutputLanguage",
+        "expectedLanguages",
+        "startedAt",
+        "endedAt",
+        "duration",
+        "status",
+        "executiveSummary",
+        "objectives",
+        "discussionPoints",
+        "unresolvedQuestions",
+        "risks",
+        "followUpSuggestions",
+        "meetingConclusion",
+        "speakers",
+        "languagesDetected",
+        "segmentCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TranscriptSegment": {
+      "title": "TranscriptSegment",
+      "description": "Multilingual speech segment with anonymous speaker label, original text, and English translation.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "meetingId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "speakerLabel": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "originalText": { "type": "string", "minLength": 1, "maxLength": 6000 },
+        "englishTranslation": { "type": "string", "maxLength": 6000 },
+        "detectedLanguage": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "startTime": { "type": "number" },
+        "endTime": { "type": "number" },
+        "uncertain": { "type": "boolean" },
+        "chunkIndex": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "meetingId",
+        "speakerLabel",
+        "originalText",
+        "englishTranslation",
+        "detectedLanguage",
+        "startTime",
+        "endTime",
+        "uncertain",
+        "chunkIndex",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Decision": {
+      "title": "Decision",
+      "description": "Extracted meeting decision classified as final, proposed, pending, or rejected.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "meetingId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "decisionText": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "decisionType": { "type": "string", "enum": ["final", "proposed", "pending", "rejected"] },
+        "speaker": { "type": "string", "maxLength": 80 },
+        "timestamp": { "type": "string", "maxLength": 40 },
+        "transcriptReference": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "meetingId", "decisionText", "decisionType", "speaker", "timestamp", "transcriptReference", "createdAt", "updatedAt"]
+    },
+    "ActionItem": {
+      "title": "ActionItem",
+      "description": "Action item extracted from a meeting transcript or manually edited by the owner.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "meetingId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "meetingTitle": { "type": "string", "maxLength": 200 },
+        "task": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "assignedTo": { "type": "string", "maxLength": 120 },
+        "deadline": { "type": "string", "maxLength": 80 },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "transcriptReference": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "meetingId", "meetingTitle", "task", "assignedTo", "deadline", "priority", "status", "transcriptReference", "createdAt", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Grounded Ask Your Meeting Q&A entry tied to a specific meeting.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "meetingId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "question": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "answer": { "type": "string", "minLength": 1, "maxLength": 12000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "meetingId", "question", "answer", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user settings and profile document owned strictly by {userId}."
+    },
+    "/meetings/{meetingId}": {
+      "schema": { "$ref": "#/entities/Meeting" },
+      "description": "User-owned physical meeting metadata and structured AI minutes."
+    },
+    "/meetings/{meetingId}/segments/{segmentId}": {
+      "schema": { "$ref": "#/entities/TranscriptSegment" },
+      "description": "Multilingual diarized transcript segments for a meeting."
+    },
+    "/meetings/{meetingId}/decisions/{decisionId}": {
+      "schema": { "$ref": "#/entities/Decision" },
+      "description": "Structured decisions extracted from a meeting."
+    },
+    "/meetings/{meetingId}/chatMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Grounded AI Q&A conversation history for a meeting."
+    },
+    "/actionItems/{itemId}": {
+      "schema": { "$ref": "#/entities/ActionItem" },
+      "description": "User-scoped action items across all meetings for dashboard and meeting trackers."
+    }
+  }
+}

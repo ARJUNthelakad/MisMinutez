@@ -1,0 +1,10 @@
+{
+  "name": "MisMinutez",
+  "description": "Every Language. Every Voice. One Clear Meeting Summary. AI-powered multilingual meeting minutes generator for physical meetings with offline-first audio recording.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

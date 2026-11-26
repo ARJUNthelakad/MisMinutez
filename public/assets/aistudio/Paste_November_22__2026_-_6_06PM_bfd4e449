@@ -1,0 +1,1389 @@
+# MASTER DEVELOPMENT PROMPT — MISMINUTEZ
+## AI-Powered Multilingual Meeting Minutes Generator
+
+Act as a senior full-stack software architect, AI engineer, UI/UX designer, database engineer, and hackathon mentor.
+
+Your task is to design and build a complete, modern, professional, working application named **MisMinutez**.
+
+This is a 24-hour college hackathon project developed by a team of five intermediate-level programmers. Build a functional, impressive, reliable MVP first, then add advanced features where time permits.
+
+Do not create only a landing page or static UI. Build a complete end-to-end application with working frontend, backend, database, audio recording, multilingual transcription, AI analysis, meeting history, and report generation.
+
+---
+
+# 1. PROJECT OVERVIEW
+
+**Project Name:** MisMinutez
+
+**Project Category:** Artificial Intelligence / Productivity / Multilingual Communication
+
+**Project Description:**
+
+MisMinutez is an AI-powered multilingual meeting assistant designed for physical, face-to-face meetings.
+
+In a real meeting room, different participants may speak different languages, including Malayalam, English, Hindi, Tamil, Kannada, Telugu, Arabic, and other supported languages.
+
+Participants may switch languages during a meeting or even within a single sentence.
+
+MisMinutez captures the meeting audio through the laptop or mobile device's built-in microphone, identifies different speakers, detects the language of each speech segment, transcribes the original conversation, translates it into English, and generates structured, professional meeting minutes automatically.
+
+The application should eliminate the need for someone to manually write meeting notes.
+
+**Main tagline:**
+
+"Every Language. Every Voice. One Clear Meeting Summary."
+
+## Primary objectives
+
+1. Capture physical meeting audio.
+2. Support multiple speakers in one room.
+3. Detect different languages automatically.
+4. Handle multilingual code-switching.
+5. Transcribe original spoken conversations.
+6. Identify speakers using anonymous speaker labels.
+7. Translate all transcript segments into English.
+8. Generate professional meeting minutes.
+9. Extract decisions and action items.
+10. Store meeting records securely.
+11. Allow users to search and revisit previous meetings.
+12. Work on laptops and mobile phones.
+13. Support offline recording and later processing.
+
+IMPORTANT: This application is designed for physical meetings, NOT Zoom, Google Meet, Microsoft Teams, or other online meeting platforms.
+
+---
+
+# 2. CORE FUNCTIONAL REQUIREMENTS
+
+## 2.1 Physical meeting audio capture
+
+The application must record conversations happening in a physical room.
+
+Use the device's built-in microphone by default.
+
+Supported devices:
+- Windows laptops
+- macOS laptops
+- Linux laptops with supported browsers
+- Android smartphones
+- iPhones and iPads where browser capabilities permit
+
+Use browser microphone APIs:
+
+- navigator.mediaDevices.getUserMedia()
+- MediaRecorder API
+- Web Audio API where necessary
+
+Features:
+- Start recording.
+- Pause recording.
+- Resume recording.
+- Stop recording.
+- Display elapsed meeting time.
+- Display microphone permission status.
+- Display microphone activity/audio level.
+- Provide a microphone test before recording.
+- Show a clear recording indicator.
+- Display audio capture errors.
+- Warn users if microphone permission is denied.
+- Allow users to choose another available microphone if one exists.
+
+Do not assume an external conference microphone is available.
+
+The application must explain browser microphone permission requirements.
+
+## 2.2 Multilingual speech recognition
+
+This is one of the most important features.
+
+The same physical meeting can contain multiple languages.
+
+Example conversation:
+
+Speaker 1: "We need to complete the project before Friday."
+
+Speaker 2: "നമുക്ക് ആദ്യം backend development തീർക്കണം."
+
+Speaker 3: "लेकिन database integration अभी बाकी है।"
+
+Speaker 1: "Okay, let's finish it tomorrow."
+
+The application must:
+- Detect the language for each utterance or speech segment.
+- Support language switching within a meeting.
+- Handle code-switching where supported by the chosen speech engine.
+- Preserve the original spoken text.
+- Identify the language of each segment.
+- Avoid assuming the entire meeting uses one language.
+- Display original speech and its English translation.
+
+Priority languages:
+- English
+- Malayalam
+- Hindi
+- Tamil
+- Kannada
+- Telugu
+- Arabic
+
+Other languages may be supported if the selected speech provider supports them.
+
+IMPORTANT:
+Do not claim support for a language until the selected speech-recognition provider has been verified for that language.
+
+Test Malayalam, Hindi, Tamil, and English with actual audio before finalizing the provider.
+
+If the provider does not reliably support language identification or code-switching, implement a fallback approach and clearly indicate uncertain segments for review.
+
+## 2.3 Speaker identification and diarization
+
+Identify who spoke at different points in the conversation.
+
+Use speaker diarization to assign anonymous labels:
+
+- Speaker 1
+- Speaker 2
+- Speaker 3
+- Speaker 4
+
+Requirements:
+- Detect changes between speakers.
+- Associate transcript segments with speaker labels.
+- Maintain consistent labels throughout the meeting where technically possible.
+- Allow users to manually assign names to speaker labels.
+- Allow speaker-label corrections.
+- Display speaker information beside transcript segments.
+
+IMPORTANT:
+Do not attempt to identify a person's real-world identity from their voice.
+
+Speaker diarization is different from identifying a person.
+
+Only assign names when users manually provide them.
+
+If multiple people speak simultaneously or the audio is unclear, mark the segment as uncertain rather than inventing speaker information.
+
+---
+
+# 3. REAL-TIME TRANSCRIPTION INTERFACE
+
+Build a professional live meeting recording interface.
+
+Display:
+
+- Meeting title.
+- Recording status.
+- Recording timer.
+- Microphone activity indicator.
+- Audio waveform or level visualization.
+- Number of detected speakers.
+- Language detected for each segment.
+- Live transcript.
+- English translation.
+- Speaker labels.
+- Segment timestamps.
+- Internet connectivity status.
+- Local audio save status.
+- Upload progress.
+
+Each transcript segment should contain:
+
+{
+  "speaker_label": "Speaker 1",
+  "original_text": "നമുക്ക് project നാളെ complete ചെയ്യാം",
+  "detected_language": "Malayalam",
+  "english_translation": "We can complete the project tomorrow.",
+  "start_time": 12.5,
+  "end_time": 16.2,
+  "confidence": null
+}
+
+Only include confidence values when the transcription provider actually supplies them.
+
+Provide three transcript viewing modes:
+
+1. Original language.
+2. English translation.
+3. Original language + English translation.
+
+Allow users to edit incorrect transcript segments.
+
+Do not fabricate live transcription if the chosen provider only supports post-recording transcription.
+
+If streaming transcription is unavailable, process short audio chunks and clearly show processing status.
+
+---
+
+# 4. OFFLINE-FIRST AND INTERNET-CONNECTION SUPPORT
+
+This is a critical requirement.
+
+MisMinutez must work on laptops and mobile devices even when internet availability is uncertain.
+
+Implement an offline-first architecture.
+
+## 4.1 Online mode
+
+When internet is available:
+
+1. Capture audio from the built-in microphone.
+2. Record audio in manageable chunks.
+3. Upload chunks securely.
+4. Send audio to the selected speech-recognition service.
+5. Detect languages.
+6. Transcribe speech.
+7. Perform speaker diarization if supported.
+8. Translate original speech into English.
+9. Send the transcript to Gemini.
+10. Generate structured meeting minutes.
+11. Save the results to Supabase.
+
+## 4.2 Offline mode
+
+When internet is unavailable:
+
+1. Allow the user to start a meeting.
+2. Record using the device microphone.
+3. Store audio chunks locally using IndexedDB.
+4. Save meeting metadata locally.
+5. Track recording progress.
+6. Maintain a pending upload queue.
+7. Display "Saved Locally — Waiting for Internet".
+8. Do not lose audio when the connection drops.
+9. Resume uploads when connectivity returns.
+10. Process queued audio after reconnection.
+
+Implement:
+- IndexedDB audio storage.
+- Unique chunk IDs.
+- Upload queue.
+- Retry mechanism.
+- Duplicate-upload prevention.
+- Upload progress.
+- Interrupted-upload recovery.
+- Safe deletion after server confirmation.
+- Local storage cleanup controls.
+
+Use network status events as hints, but verify actual server connectivity before declaring processing available.
+
+## 4.3 Offline AI limitations
+
+Do not pretend that cloud AI can work without internet.
+
+The initial hackathon MVP should prioritize:
+
+**Offline audio recording + online AI processing when connectivity returns.**
+
+Architect the system so that local speech recognition, translation, and summarization can be added later.
+
+If local AI is implemented, use actual local models and test their performance on target devices.
+
+Clearly communicate whether a meeting is:
+- Recorded locally.
+- Uploaded.
+- Waiting for processing.
+- Being processed.
+- Completed.
+
+## 4.4 Mobile browser limitations
+
+The application must:
+- Support responsive mobile layouts.
+- Use touch-friendly controls.
+- Handle permission denial.
+- Handle browser interruption.
+- Warn users that mobile browsers or operating systems may suspend recording in the background.
+- Never promise continued recording after closing the browser or locking the device unless verified on that platform.
+
+Test Android and iOS separately.
+
+---
+
+# 5. AI MEETING INTELLIGENCE
+
+Use the Google Gemini API for meeting analysis.
+
+Use the current official Google Gen AI SDK, @google/genai, and keep API keys on the server.
+
+Send the complete English-translated transcript to the AI analysis service.
+
+Generate structured meeting minutes.
+
+## 5.1 Executive summary
+
+Generate:
+- Short meeting overview.
+- Main objective.
+- Key discussion themes.
+- Overall meeting outcome.
+
+## 5.2 Discussion points
+
+Identify:
+- Important topics.
+- Problems discussed.
+- Suggestions.
+- Different opinions.
+- Important observations.
+- Proposed solutions.
+
+## 5.3 Decision extraction
+
+Extract decisions and classify them as:
+
+- Final decision.
+- Proposed decision.
+- Pending decision.
+- Rejected proposal.
+
+Do not confuse a suggestion with a confirmed decision.
+
+Each decision should include a transcript reference where possible.
+
+## 5.4 Action item extraction
+
+Extract:
+
+- Task.
+- Assigned person.
+- Deadline.
+- Priority.
+- Status.
+- Supporting transcript reference.
+
+Only assign a person when the transcript explicitly identifies the assignee.
+
+Only provide a deadline when explicitly mentioned.
+
+Never invent a commitment, deadline, person, or task.
+
+## 5.5 Unresolved questions
+
+Identify:
+- Questions that were not answered.
+- Unresolved issues.
+- Pending discussions.
+- Missing information.
+- Disagreements requiring follow-up.
+
+## 5.6 Risk identification
+
+Extract risks that participants explicitly discuss.
+
+AI-generated risk suggestions must be labelled as suggestions, not confirmed facts.
+
+## 5.7 Follow-up suggestions
+
+Generate:
+- Recommended next steps.
+- Follow-up meeting suggestions.
+- Pending responsibilities.
+- Suggested clarifications.
+
+Clearly distinguish AI recommendations from actual meeting decisions.
+
+## 5.8 Meeting conclusion
+
+Generate a short professional conclusion.
+
+---
+
+# 6. SMART MEETING FEATURES
+
+Implement these features where time permits.
+
+## 6.1 Ask Your Meeting — AI Chat
+
+Create an AI-powered chat interface for asking questions about a completed meeting.
+
+Example questions:
+
+- What was discussed about the project deadline?
+- Who was assigned backend development?
+- What decisions were finalized?
+- Which tasks are pending?
+- What did Speaker 2 say about the database?
+- Were there any unresolved questions?
+- What is the next action?
+
+Answers must be based on the actual meeting transcript and minutes.
+
+Requirements:
+- Ground answers in the meeting content.
+- Include speaker labels and timestamps where available.
+- Say "This was not discussed in the meeting" if no evidence exists.
+- Never invent answers.
+- Do not use unrelated external knowledge as meeting facts.
+
+## 6.2 Smart Decision Tracker
+
+Create a section displaying:
+- Final decisions.
+- Proposed decisions.
+- Pending decisions.
+- Rejected proposals.
+
+Allow users to correct classifications.
+
+## 6.3 Action Item Tracker
+
+Create a task management interface.
+
+Display:
+- Task name.
+- Assigned person.
+- Deadline.
+- Priority.
+- Status.
+
+Allow users to:
+- Mark tasks complete.
+- Edit tasks.
+- Assign owners manually.
+- Add deadlines manually.
+- Filter pending and completed tasks.
+
+## 6.4 Language Timeline
+
+Show which languages were spoken throughout the meeting.
+
+Example:
+
+00:00–02:30 English
+
+02:30–04:10 Malayalam
+
+04:10–05:45 Hindi
+
+05:45–07:20 English + Malayalam
+
+Only use actual detected language information.
+
+## 6.5 Speaker Analytics
+
+Display:
+- Number of speakers.
+- Speaking duration where supported.
+- Number of transcript segments.
+- Languages used by each speaker.
+
+Do not treat speaking duration as a measurement of contribution quality.
+
+## 6.6 Missed Information Detector
+
+Highlight:
+- Questions without answers.
+- Tasks without assigned owners.
+- Decisions without deadlines.
+- Unresolved disagreements.
+
+Label these as potential follow-up issues, not confirmed meeting facts.
+
+## 6.7 Smart Follow-up Email
+
+Generate a professional follow-up email containing:
+- Meeting summary.
+- Confirmed decisions.
+- Action items.
+- Deadlines.
+- Follow-up requirements.
+
+Allow users to edit before copying or sending.
+
+## 6.8 Multilingual Report Translation
+
+The main meeting report should be generated in English.
+
+Allow users to translate the completed report into:
+- Malayalam.
+- Hindi.
+- Tamil.
+- Kannada.
+- Telugu.
+- Arabic.
+- Other supported languages.
+
+Keep the original English report unchanged.
+
+---
+
+# 7. USER INTERFACE AND DESIGN
+
+Create a premium, modern SaaS interface.
+
+The design must look professional enough for a college hackathon demonstration and real-world product presentation.
+
+Design direction:
+- Clean modern dashboard.
+- Professional typography.
+- Rounded cards.
+- Subtle shadows.
+- Soft gradients used carefully.
+- Consistent spacing.
+- Smooth transitions.
+- Responsive layout.
+- Accessible contrast.
+- Dark and light themes if time permits.
+
+Use:
+- Tailwind CSS.
+- Lucide icons.
+- Framer Motion where appropriate.
+- Recharts for real analytics.
+- A reusable component system.
+
+Avoid:
+- Generic template appearance.
+- Excessive gradients.
+- Cluttered dashboards.
+- Fake statistics.
+- Decorative controls that do nothing.
+- Fake AI processing animations.
+
+All visible buttons must perform real actions or be clearly marked as unavailable.
+
+## 7.1 Landing page
+
+Include:
+
+- MisMinutez logo and name.
+- Tagline: "Every Language. Every Voice. One Clear Meeting Summary."
+- Short project description.
+- How it works.
+- Supported languages.
+- Feature highlights.
+- Privacy and offline-recording explanation.
+- Login and signup.
+- Start meeting button.
+
+## 7.2 Dashboard
+
+Display:
+- Welcome section.
+- Start New Meeting.
+- Total meetings.
+- Total recording time.
+- Recent meetings.
+- Pending action items.
+- Recent reports.
+- Quick search.
+
+Statistics must come from actual database records.
+
+## 7.3 New Meeting page
+
+Include:
+- Meeting title.
+- Description.
+- Meeting type.
+- Preferred output language.
+- Automatic language detection.
+- Optional expected languages.
+- Microphone test.
+- Permission status.
+- Internet status.
+- Start meeting button.
+
+Meeting types:
+- College project.
+- Business meeting.
+- Team stand-up.
+- Brainstorming.
+- Academic discussion.
+- Client meeting.
+- Interview.
+- General meeting.
+
+## 7.4 Live Meeting Room
+
+Include:
+- Recording controls.
+- Audio visualization.
+- Timer.
+- Speaker labels.
+- Language badges.
+- Live transcript.
+- English translations.
+- Original/translated/both view.
+- Connectivity status.
+- Local save status.
+- Pause, resume and stop buttons.
+
+Make this page particularly mobile-friendly.
+
+## 7.5 Meeting Results page
+
+Organize the output into tabs or sections:
+
+1. Executive Summary.
+2. Discussion Points.
+3. Decisions.
+4. Action Items.
+5. Unresolved Questions.
+6. Risks.
+7. Speakers.
+8. Language Timeline.
+9. Full Transcript.
+10. AI Meeting Chat.
+
+Provide a professional report layout.
+
+## 7.6 Meeting History
+
+Include:
+- All previous meetings.
+- Search by meeting title.
+- Filter by date.
+- Filter by meeting type.
+- Sort by newest and oldest.
+- View report.
+- Delete meeting with confirmation.
+
+## 7.7 Settings
+
+Include:
+- User profile.
+- Default report language.
+- Preferred languages.
+- Theme preference.
+- Audio recording settings.
+- Data and privacy settings.
+- Local recording management.
+- Account logout.
+
+---
+
+# 8. TECHNOLOGY STACK
+
+Use the following recommended technology stack.
+
+## Frontend
+
+- Next.js with App Router.
+- TypeScript.
+- Tailwind CSS.
+- Framer Motion.
+- Lucide React.
+- Recharts.
+
+## Backend
+
+- Next.js API routes / server-side Node.js.
+- Secure API architecture.
+- Server-side AI calls.
+- Input validation.
+- Error handling.
+
+## Database and Storage
+
+Use Supabase:
+- PostgreSQL database.
+- Supabase Authentication.
+- Supabase Storage.
+- Row Level Security.
+
+Use IndexedDB for local offline audio storage.
+
+## AI
+
+- Google Gemini API using @google/genai for meeting analysis.
+- A verified multilingual speech-recognition provider for audio transcription.
+- A verified speaker-diarization capability or a clearly documented fallback.
+- Translation through the speech provider or a validated AI translation workflow.
+
+Before selecting a speech provider:
+1. Check current official documentation.
+2. Verify language support.
+3. Verify Malayalam, Hindi, Tamil and English performance.
+4. Verify language identification.
+5. Verify speaker diarization.
+6. Verify audio upload and streaming support.
+7. Verify pricing and rate limits.
+8. Run real sample recordings.
+
+Do not invent SDK methods or unsupported API capabilities.
+
+If a single provider cannot perform every requirement, use a modular pipeline.
+
+## Deployment
+
+- GitHub for source control.
+- Vercel for frontend and backend deployment.
+- Supabase for database and storage.
+
+Keep all secrets in environment variables.
+
+Never expose API keys in frontend code.
+
+---
+
+# 9. DATABASE DESIGN
+
+Create a well-structured Supabase PostgreSQL database.
+
+Suggested tables:
+
+## profiles
+
+- id
+- name
+- email
+- created_at
+
+## meetings
+
+- id
+- user_id
+- title
+- description
+- meeting_type
+- started_at
+- ended_at
+- duration
+- status
+- summary
+- created_at
+
+## speakers
+
+- id
+- meeting_id
+- speaker_label
+- display_name
+- created_at
+
+## transcript_segments
+
+- id
+- meeting_id
+- speaker_id
+- original_text
+- translated_text
+- detected_language
+- start_time
+- end_time
+- confidence
+- created_at
+
+## decisions
+
+- id
+- meeting_id
+- decision_text
+- decision_type
+- transcript_reference
+- created_at
+
+## action_items
+
+- id
+- meeting_id
+- task
+- assigned_to
+- deadline
+- priority
+- status
+- transcript_reference
+- created_at
+
+## meeting_chat
+
+- id
+- meeting_id
+- question
+- answer
+- created_at
+
+## recording_chunks
+
+- id
+- meeting_id
+- chunk_index
+- storage_path
+- upload_status
+- duration
+- created_at
+
+Add:
+- Primary keys.
+- Foreign keys.
+- Appropriate indexes.
+- Data validation.
+- User access policies.
+- Row Level Security.
+- Ownership checks.
+
+Use private storage buckets for recordings.
+
+Do not expose meeting recordings publicly.
+
+Design the data model so that audio retention can be configured or disabled.
+
+---
+
+# 10. API ENDPOINTS
+
+Create secure, validated endpoints.
+
+Suggested endpoints:
+
+POST /api/meetings
+Create a new meeting.
+
+GET /api/meetings
+Fetch meeting history.
+
+GET /api/meetings/[id]
+Fetch meeting details.
+
+PUT /api/meetings/[id]
+Update meeting information.
+
+DELETE /api/meetings/[id]
+Delete meeting and associated data according to retention policy.
+
+POST /api/recordings/upload
+Upload recording chunks securely.
+
+POST /api/transcription
+Process audio and obtain transcript segments.
+
+POST /api/translation
+Translate transcript segments.
+
+POST /api/meeting-analysis
+Generate structured minutes using Gemini.
+
+POST /api/meeting-chat
+Answer questions based on a specific meeting.
+
+PUT /api/action-items/[id]
+Update action item status or details.
+
+POST /api/export
+Generate a PDF report.
+
+Use server-side validation and authentication.
+
+Do not allow users to access another user's meeting data.
+
+---
+
+# 11. GEMINI OUTPUT FORMAT
+
+Gemini should return structured JSON.
+
+Use this schema as the target output:
+
+{
+  "meeting_title": "",
+  "executive_summary": "",
+  "objectives": [],
+  "discussion_points": [],
+  "decisions": [
+    {
+      "decision": "",
+      "type": "final",
+      "speaker": null,
+      "timestamp": null,
+      "transcript_reference": null
+    }
+  ],
+  "action_items": [
+    {
+      "task": "",
+      "assigned_to": null,
+      "deadline": null,
+      "priority": "medium",
+      "status": "pending",
+      "transcript_reference": null
+    }
+  ],
+  "unresolved_questions": [],
+  "risks": [],
+  "follow_up_suggestions": [],
+  "meeting_conclusion": ""
+}
+
+Use schema validation before saving or displaying the response.
+
+AI instructions:
+
+- Never invent meeting facts.
+- Never invent speaker names.
+- Never invent deadlines.
+- Never invent assignments.
+- Never turn proposals into final decisions.
+- Distinguish explicitly stated facts from recommendations.
+- Use null for unknown values.
+- Preserve the original meaning of translated speech.
+- Indicate uncertainty when the transcript is unclear.
+- Link decisions and tasks to transcript references whenever possible.
+
+---
+
+# 12. PDF REPORT GENERATION
+
+Generate a professional downloadable meeting report.
+
+Include:
+
+1. MisMinutez branding.
+2. Meeting title.
+3. Meeting date and duration.
+4. Executive summary.
+5. Meeting objectives.
+6. Discussion points.
+7. Final decisions.
+8. Proposed and pending decisions.
+9. Action items.
+10. Unresolved questions.
+11. Risks.
+12. Follow-up suggestions.
+13. Participants or manually assigned speaker names.
+14. Full transcript as an optional appendix.
+
+Make the PDF clean and readable.
+
+Allow users to choose whether to include the full transcript.
+
+---
+
+# 13. SECURITY AND PRIVACY
+
+Implement privacy and security from the beginning.
+
+Requirements:
+
+- Ask for microphone permission.
+- Clearly notify all participants that recording is active.
+- Obtain appropriate participant consent before recording.
+- Use HTTPS.
+- Store API keys only on the server.
+- Validate all API requests.
+- Apply Supabase Row Level Security.
+- Protect private audio files.
+- Restrict access to meeting data.
+- Provide meeting deletion.
+- Provide audio deletion.
+- Explain when cloud AI services receive recordings or transcripts.
+- Avoid storing audio longer than necessary.
+- Do not expose private recordings through public URLs.
+- Never use voice recognition to identify real-world individuals.
+
+Create a `.env.example` file.
+
+Do not commit `.env.local` or other secrets to GitHub.
+
+---
+
+# 14. PROJECT STRUCTURE
+
+Use a clean, scalable folder structure.
+
+Suggested structure:
+
+misminutez/
+│
+├── app/
+│   ├── page.tsx
+│   ├── dashboard/
+│   ├── meetings/
+│   ├── new-meeting/
+│   ├── history/
+│   ├── settings/
+│   └── api/
+│
+├── components/
+│   ├── layout/
+│   ├── dashboard/
+│   ├── meeting/
+│   ├── transcript/
+│   ├── reports/
+│   ├── analytics/
+│   └── ui/
+│
+├── lib/
+│   ├── supabase/
+│   ├── gemini/
+│   ├── speech/
+│   ├── audio/
+│   ├── offline/
+│   ├── translation/
+│   └── validation/
+│
+├── hooks/
+│
+├── types/
+│
+├── public/
+│   ├── icons/
+│   └── manifest.json
+│
+├── supabase/
+│   └── migrations/
+│
+├── .env.example
+├── .gitignore
+├── package.json
+└── README.md
+
+You may improve this structure if necessary.
+
+---
+
+# 15. FIVE-MEMBER TEAM ALLOCATION
+
+The project is being developed by a team of five intermediate-level programmers.
+
+Divide responsibilities clearly.
+
+## Member 1 — Frontend Developer
+
+Responsible for:
+- Landing page.
+- Dashboard.
+- Meeting creation page.
+- Live meeting interface.
+- Transcript display.
+- Results page.
+- Responsive mobile UI.
+
+## Member 2 — Audio and Speech Recognition Developer
+
+Responsible for:
+- Microphone access.
+- Audio capture.
+- Recording controls.
+- Audio chunking.
+- Language detection.
+- Multilingual transcription.
+- Speaker diarization.
+- Audio quality handling.
+
+## Member 3 — AI Engineer
+
+Responsible for:
+- Gemini API integration.
+- English translation workflow.
+- Executive summaries.
+- Discussion extraction.
+- Decision classification.
+- Action item extraction.
+- AI meeting chat.
+- Structured JSON validation.
+
+## Member 4 — Backend and Database Developer
+
+Responsible for:
+- Supabase configuration.
+- Authentication.
+- Database schema.
+- Storage.
+- API endpoints.
+- Meeting history.
+- Data security.
+- PDF export integration.
+
+## Member 5 — Integration, Testing and Deployment Developer
+
+Responsible for:
+- GitHub repository.
+- Project structure.
+- Shared types and API contracts.
+- Integration between all modules.
+- Testing.
+- Debugging.
+- Deployment.
+- Demo preparation.
+- Presentation slides.
+
+IMPORTANT:
+
+Member 5 must establish the repository, shared interfaces, environment variable names, and API contracts immediately.
+
+Do not allow team members to build incompatible modules independently.
+
+Create a shared task board and use feature branches.
+
+Integrate working modules continuously rather than waiting until the end.
+
+---
+
+# 16. 24-HOUR HACKATHON EXECUTION PLAN
+
+Follow this schedule.
+
+## Hours 0–2: Setup
+
+- Create GitHub repository named MisMinutez.
+- Create Next.js application.
+- Configure TypeScript and Tailwind.
+- Create Supabase project.
+- Configure environment variables.
+- Test Gemini API.
+- Research and test speech provider.
+- Create database schema.
+- Establish API contracts.
+
+## Hours 2–6: Core Development
+
+- Build landing page.
+- Build dashboard.
+- Implement microphone recording.
+- Implement audio chunking.
+- Implement local audio storage.
+- Build meeting creation.
+- Connect Supabase.
+- Test speech provider with real samples.
+
+## Hours 6–11: First Integration
+
+- Complete recording workflow.
+- Upload audio chunks.
+- Obtain multilingual transcription.
+- Implement transcript display.
+- Add speaker labels.
+- Add language labels.
+- Implement offline upload queue.
+- Test internet disconnection and reconnection.
+
+## Hours 11–15: AI Intelligence
+
+- Implement English translation.
+- Integrate Gemini.
+- Generate executive summary.
+- Extract discussion points.
+- Extract decisions.
+- Extract action items.
+- Extract unresolved questions.
+- Validate structured output.
+
+## Hours 15–18: Product Features
+
+- Build meeting results page.
+- Implement meeting history.
+- Implement PDF export.
+- Add report translation if feasible.
+- Add AI meeting chat if core functionality is stable.
+- Improve mobile responsiveness.
+
+## Hours 18–21: Testing
+
+Test:
+- English.
+- Malayalam.
+- Hindi.
+- Tamil.
+- Mixed-language speech.
+- Multiple speakers.
+- Microphone permissions.
+- Offline recording.
+- Reconnection.
+- Upload recovery.
+- Mobile interface.
+- Laptop interface.
+
+## Hours 21–24: Finalization
+
+- Fix critical bugs.
+- Deploy application.
+- Test production environment.
+- Prepare sample meeting audio.
+- Prepare sample generated report.
+- Prepare presentation slides.
+- Rehearse the demonstration.
+- Prepare backup screenshots and recordings.
+
+Prioritize a fully functioning end-to-end MVP over incomplete advanced features.
+
+---
+
+# 17. REQUIRED DEMONSTRATION SCENARIO
+
+Prepare a realistic physical meeting demonstration.
+
+Example:
+
+Four participants are sitting in one room.
+
+Speaker 1 speaks in English.
+
+Speaker 2 speaks in Malayalam.
+
+Speaker 3 speaks in Hindi.
+
+Speaker 4 switches between English and Tamil.
+
+The conversation discusses:
+- College project planning.
+- Backend development.
+- Database integration.
+- Project deadlines.
+- Task assignments.
+
+MisMinutez should:
+
+1. Capture the room audio.
+2. Produce transcript segments.
+3. Identify anonymous speakers.
+4. Detect languages per segment.
+5. Translate segments into English.
+6. Generate a unified summary.
+7. Extract decisions.
+8. Extract action items.
+9. Display unresolved questions.
+10. Generate a downloadable PDF.
+
+Also demonstrate offline recording:
+
+1. Start recording.
+2. Disconnect the internet.
+3. Continue recording.
+4. Confirm audio is saved locally.
+5. Reconnect the internet.
+6. Upload queued audio.
+7. Process the meeting.
+8. Display generated meeting minutes.
+
+Do not fake the results. Use actual audio and actual processing.
+
+---
+
+# 18. TESTING AND QUALITY REQUIREMENTS
+
+Create a practical testing checklist.
+
+Test:
+
+- Successful signup and login.
+- Microphone permission granted.
+- Microphone permission denied.
+- Recording start, pause, resume and stop.
+- Audio chunk storage.
+- Local storage recovery.
+- Internet loss during recording.
+- Internet reconnection.
+- Upload retry.
+- Duplicate upload prevention.
+- English transcription.
+- Malayalam transcription.
+- Hindi transcription.
+- Tamil transcription.
+- Mixed-language conversations.
+- Speaker changes.
+- Unclear audio.
+- Translation accuracy.
+- Gemini JSON output.
+- Decision classification.
+- Action item accuracy.
+- Meeting history.
+- Meeting deletion.
+- PDF export.
+- Mobile layout.
+- Laptop layout.
+- Private user data access.
+
+Do not mark a feature as completed until it has been tested.
+
+Use clear loading states, empty states, and error messages.
+
+---
+
+# 19. DEVELOPMENT RULES FOR THE AI CODING AGENT
+
+Follow these rules throughout development.
+
+1. Build actual working functionality, not just UI mockups.
+2. Do not skip backend integration.
+3. Do not hardcode fake meeting results.
+4. Do not invent API capabilities.
+5. Use official documentation for third-party SDKs.
+6. Use TypeScript throughout.
+7. Create reusable components.
+8. Keep code modular and maintainable.
+9. Validate API inputs and AI outputs.
+10. Handle failures gracefully.
+11. Keep all secrets server-side.
+12. Ensure mobile responsiveness.
+13. Keep offline recording reliable.
+14. Test language support with real audio.
+15. Use clear error messages.
+16. Do not leave visible buttons without functionality.
+17. Do not overengineer the MVP.
+18. Prioritize the complete meeting-to-minutes workflow.
+19. Document setup instructions.
+20. Maintain a working GitHub repository.
+
+## HOW YOU MUST WORK
+
+Do not attempt to generate the entire application in one enormous code response.
+
+Work in structured development phases.
+
+For each phase:
+
+1. Explain what will be built.
+2. List the files to create or modify.
+3. Provide complete, executable code.
+4. Explain where each file belongs.
+5. Explain how to install dependencies.
+6. Explain how to configure environment variables.
+7. Explain how to run the application.
+8. Explain how to test the feature.
+9. Identify common errors and solutions.
+10. Confirm the phase is working before moving forward.
+
+When a required API key or external service connection is missing, explain exactly how to obtain and configure it.
+
+Do not pretend an integration is working if it has not been tested.
+
+When a third-party API does not support a requirement, explain the limitation and suggest the most practical alternative.
+
+Maintain shared TypeScript types and API contracts across all five team members.
+
+At the end of each phase, provide a checklist showing:
+- Completed features.
+- Remaining features.
+- Required credentials.
+- Testing status.
+- Next development tasks.
+
+---
+
+# 20. FINAL PROJECT EXPECTATION
+
+The final MisMinutez application must be:
+
+- A responsive web application.
+- Usable on laptops and mobile phones.
+- Compatible with built-in microphones.
+- Designed for physical face-to-face meetings.
+- Capable of handling multilingual conversations.
+- Capable of detecting language changes.
+- Capable of identifying anonymous speakers.
+- Capable of generating English translations.
+- Capable of producing structured meeting minutes.
+- Capable of extracting decisions and action items.
+- Capable of storing and retrieving previous meetings.
+- Capable of recording audio offline and processing it after internet returns.
+- Secure and privacy-conscious.
+- Deployable and ready for a live hackathon demonstration.
+
+The main objective is to build a working product that solves a genuine problem.
+
+Do not sacrifice reliability for unnecessary features.
+
+Start by presenting:
+1. The final technical architecture.
+2. The exact technology choices.
+3. The GitHub repository structure.
+4. The Supabase database schema.
+5. The five-member task allocation.
+6. The first two hours of development steps.
+
+Then guide the team through implementation step by step.
+
+**PROJECT NAME: MISMINUTEZ**
+
+**TAGLINE: EVERY LANGUAGE. EVERY VOICE. ONE CLEAR MEETING SUMMARY.**
